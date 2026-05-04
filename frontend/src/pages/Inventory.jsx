@@ -84,12 +84,14 @@ export function Inventory() {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
+  try {
     const data = {
       nome: formData.name,
       codigo_barras: String(formData.barcode || '').trim(),
       categoria: formData.category,
+      cor: formData.color,
       preco_compra: 0,
       preco_venda: Number(formData.price || 0),
       quantidade: Number(formData.quantity || 0),
@@ -105,8 +107,11 @@ export function Inventory() {
 
     await loadProducts();
     setShowModal(false);
-  };
-
+  } catch (error) {
+    console.error(error);
+    alert('Erro ao cadastrar produto. Verifique se o backend está rodando.');
+  }
+};
   const handleDelete = async (id) => {
     await removeProduct(id);
     await loadProducts();

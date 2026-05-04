@@ -18,8 +18,16 @@ app.use("/produtos", produtosRoutes);
 app.use("/vendas", vendasRoutes);
 app.use("/estoque", estoqueRoutes);
 
-const PORT = 3333;
+const PORT = process.env.PORT || 3333;
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Servidor rodando em http://localhost:${PORT}`);
+});
+
+process.on("SIGTERM", () => {
+  server.close(() => process.exit(0));
+});
+
+process.on("SIGINT", () => {
+  server.close(() => process.exit(0));
 });

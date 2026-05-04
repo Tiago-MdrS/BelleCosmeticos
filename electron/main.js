@@ -1,63 +1,52 @@
 const { app, BrowserWindow } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
-const waitOn = require('wait-on');
 
-let mainWindow;
 let backendProcess;
 
-const isDev = !app.isPackaged;
-
 function startBackend() {
-  const backendPath = isDev
-    ? path.join(__dirname, '../backend/src/server.js')
-    : path.join(process.resourcesPath, 'backend/src/server.js');
+  const backendPath = path.join(__dirname, '..', 'backend');
 
-  backendProcess = spawn('node', [backendPath], {
-    cwd: isDev
-      ? path.join(__dirname, '../backend')
-      : path.join(process.resourcesPath, 'backend'),
+  backendProcess = spawn('node', ['src/server.js'], {
+    cwd: backendPath,
     shell: true,
-    stdio: 'inherit',
+    env: {
+      ...process.env,
+      PORT: '3333'
+    }
+  });
+
+  backendProcess.stdout.on('data', (data) => {
+    console.log(`[BACKEND]: ${data}`);
+  });
+
+  backendProcess.stderr.on('data', (data) => {
+    console.error(`[BACKEND ERROR]: ${data}`);
   });
 }
 
-async function createWindow() {
-  mainWindow = new BrowserWindow({
-    width: 1280,
+function createWindow() {
+  const win = new BrowserWindow({
+    width: 1200,
     height: 800,
-    minWidth: 1100,
+    minWidth: 1000,
     minHeight: 700,
-    icon: path.join(__dirname, '../assets/loja.ico'),
+    title: 'Belle Cosméticos',
     webPreferences: {
-      nodeIntegration: false,
       contextIsolation: true,
-    },
+      nodeIntegration: false
+    }
   });
 
-  if (isDev) {
-    await waitOn({
-      resources: ['http://localhost:3333/produtos'],
-      timeout: 15000,
-    });
-
-    mainWindow.loadURL('http://localhost:5173');
-  } else {
-    await waitOn({
-      resources: ['http://localhost:3333/produtos'],
-      timeout: 15000,
-    });
-
-    mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
-  }
+  win.loadURL('http://localhost:5173');
 }
 
-app.whenReady().then(async () => {
+app.whenReady().then(() => {
   startBackend();
 
   setTimeout(() => {
     createWindow();
-  }, 1000);
+  }, 1500);
 });
 
 app.on('window-all-closed', () => {
@@ -67,11 +56,5 @@ app.on('window-all-closed', () => {
 
   if (process.platform !== 'darwin') {
     app.quit();
-  }
-});
-
-app.on('before-quit', () => {
-  if (backendProcess) {
-    backendProcess.kill();
   }
 });

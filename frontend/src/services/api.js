@@ -3,17 +3,21 @@ const API_URL = 'http://localhost:3333';
 async function handleResponse(response) {
   const text = await response.text();
 
+  let data = null;
+
   try {
-    const data = text ? JSON.parse(text) : null;
-
-    if (!response.ok) {
-      throw new Error(data?.erro || data?.error || 'Erro na requisição');
-    }
-
-    return data;
-  } catch {
-    throw new Error(text || 'Resposta inválida do servidor');
+    data = text ? JSON.parse(text) : null;
+  } catch (err) {
+    console.error('Erro ao parsear JSON:', text);
+    throw new Error('Resposta inválida do servidor');
   }
+
+  if (!response.ok) {
+    console.error('Erro da API:', data);
+    throw new Error(data?.erro || data?.error || 'Erro na requisição');
+  }
+
+  return data;
 }
 
 export async function getProducts() {
@@ -22,6 +26,8 @@ export async function getProducts() {
 }
 
 export async function createProduct(product) {
+  console.log('ENVIANDO PRODUTO:', product); // 🔥 DEBUG
+
   const response = await fetch(`${API_URL}/produtos`, {
     method: 'POST',
     headers: {
