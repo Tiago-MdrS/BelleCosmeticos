@@ -31,12 +31,15 @@ function startBackend() {
 }
 
 function createWindow() {
+  const iconPath = path.join(app.getAppPath(), 'assets', 'loja.ico');
+
   const win = new BrowserWindow({
     width: 1200,
     height: 800,
     minWidth: 1000,
     minHeight: 700,
     title: 'Belle Cosméticos',
+    icon: iconPath,
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false
