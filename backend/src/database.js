@@ -1,6 +1,7 @@
 import Database from "better-sqlite3";
 
-const db = new Database("belle.db");
+const dbPath = process.env.BELLE_DB_PATH || "belle.db";
+const db = new Database(dbPath);
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS produtos (

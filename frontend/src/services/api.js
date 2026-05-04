@@ -20,13 +20,15 @@ async function handleResponse(response) {
   return data;
 }
 
+// ==================== PRODUTOS ====================
+
 export async function getProducts() {
   const response = await fetch(`${API_URL}/produtos`);
   return handleResponse(response);
 }
 
 export async function createProduct(product) {
-  console.log('ENVIANDO PRODUTO:', product); // 🔥 DEBUG
+  console.log('ENVIANDO PRODUTO:', product);
 
   const response = await fetch(`${API_URL}/produtos`, {
     method: 'POST',
@@ -59,6 +61,8 @@ export async function removeProduct(id) {
   return handleResponse(response);
 }
 
+// ==================== VENDAS ====================
+
 export async function getSales() {
   const response = await fetch(`${API_URL}/vendas`);
   return handleResponse(response);
@@ -75,6 +79,7 @@ export async function createSale(sale) {
 
   return handleResponse(response);
 }
+
 export async function cancelSale(id, motivo) {
   const response = await fetch(`${API_URL}/vendas/${id}/cancelar`, {
     method: "PATCH",
@@ -84,11 +89,14 @@ export async function cancelSale(id, motivo) {
     body: JSON.stringify({ motivo }),
   });
 
-  return response.json();
+  return handleResponse(response);
 }
+
+// ==================== BACKUP ====================
+
 export async function getBackups() {
   const response = await fetch(`${API_URL}/backup`);
-  return response.json();
+  return handleResponse(response);
 }
 
 export async function createBackup() {
@@ -96,7 +104,7 @@ export async function createBackup() {
     method: "POST"
   });
 
-  return response.json();
+  return handleResponse(response);
 }
 
 export async function restoreBackup(fileName) {
@@ -108,7 +116,7 @@ export async function restoreBackup(fileName) {
     body: JSON.stringify({ fileName })
   });
 
-  return response.json();
+  return handleResponse(response);
 }
 
 export async function openBackupFolder() {
@@ -116,5 +124,5 @@ export async function openBackupFolder() {
     method: "POST"
   });
 
-  return response.json();
+  return handleResponse(response);
 }

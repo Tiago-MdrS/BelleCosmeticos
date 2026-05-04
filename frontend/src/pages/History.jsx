@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { getSales, cancelSale } from "../services/api";
 import { useStore } from "../store";
+import { notify } from "../utils/notify";
 
 export function History() {
   const { isDarkMode } = useStore();
@@ -16,17 +17,19 @@ export function History() {
   }, []);
 
   async function handleCancel(id) {
-    const motivo = prompt("Motivo da devolução:");
+    const motivo = await notify.prompt("Motivo da devolução:");
 
     if (!motivo) return;
 
-    const confirmar = confirm("Deseja devolver essa venda?");
+    const confirmar = await notify.confirm("Deseja devolver essa venda?");
 
     if (!confirmar) return;
 
     const result = await cancelSale(id, motivo);
 
-    notify[result.sucesso ? "success" : "error"](result.mensagem || result.erro);
+    notify[result.sucesso ? "success" : "error"](
+      result.mensagem || result.erro
+    );
 
     loadData();
   }
@@ -41,7 +44,7 @@ export function History() {
 
       {sales.length === 0 && (
         <div className="text-gray-400 text-center p-10">
-          Nenhuma venda encontrada
+          Nenhuma venda registrada ainda
         </div>
       )}
 
