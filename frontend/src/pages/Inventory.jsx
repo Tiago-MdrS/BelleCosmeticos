@@ -109,7 +109,7 @@ export function Inventory() {
     setShowModal(false);
   } catch (error) {
     console.error(error);
-    alert('Erro ao cadastrar produto. Verifique se o backend está rodando.');
+    notify.error('Erro ao cadastrar produto. Verifique se o backend está rodando.');
   }
 };
   const handleDelete = async (id) => {

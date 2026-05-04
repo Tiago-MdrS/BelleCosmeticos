@@ -24,7 +24,10 @@ db.exec(`
     desconto REAL DEFAULT 0,
     total REAL NOT NULL,
     forma_pagamento TEXT NOT NULL,
-    data_venda TEXT DEFAULT CURRENT_TIMESTAMP
+    data_venda TEXT DEFAULT CURRENT_TIMESTAMP,
+    status TEXT DEFAULT 'finalizada',
+    motivo_cancelamento TEXT,
+    data_cancelamento TEXT
   );
 
   CREATE TABLE IF NOT EXISTS itens_venda (
@@ -49,5 +52,17 @@ db.exec(`
     FOREIGN KEY (produto_id) REFERENCES produtos(id)
   );
 `);
+
+try {
+  db.prepare(`ALTER TABLE vendas ADD COLUMN status TEXT DEFAULT 'finalizada'`).run();
+} catch {}
+
+try {
+  db.prepare(`ALTER TABLE vendas ADD COLUMN motivo_cancelamento TEXT`).run();
+} catch {}
+
+try {
+  db.prepare(`ALTER TABLE vendas ADD COLUMN data_cancelamento TEXT`).run();
+} catch {}
 
 export default db;

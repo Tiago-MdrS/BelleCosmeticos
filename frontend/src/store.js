@@ -103,12 +103,12 @@ export const useStore = create(
           const product = state.products.find((p) => Number(p.id) === productId);
 
           if (!product) {
-            alert('Produto não encontrado.');
+            notify.error('Produto não encontrado.');
             return state;
           }
 
           if (Number(product.quantity || 0) < quantitySold) {
-            alert('Estoque insuficiente para essa venda.');
+            notify.error('Estoque insuficiente para essa venda.');
             return state;
           }
 

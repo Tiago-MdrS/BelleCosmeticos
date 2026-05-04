@@ -75,3 +75,46 @@ export async function createSale(sale) {
 
   return handleResponse(response);
 }
+export async function cancelSale(id, motivo) {
+  const response = await fetch(`${API_URL}/vendas/${id}/cancelar`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ motivo }),
+  });
+
+  return response.json();
+}
+export async function getBackups() {
+  const response = await fetch(`${API_URL}/backup`);
+  return response.json();
+}
+
+export async function createBackup() {
+  const response = await fetch(`${API_URL}/backup/criar`, {
+    method: "POST"
+  });
+
+  return response.json();
+}
+
+export async function restoreBackup(fileName) {
+  const response = await fetch(`${API_URL}/backup/restaurar`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ fileName })
+  });
+
+  return response.json();
+}
+
+export async function openBackupFolder() {
+  const response = await fetch(`${API_URL}/backup/abrir-pasta`, {
+    method: "POST"
+  });
+
+  return response.json();
+}

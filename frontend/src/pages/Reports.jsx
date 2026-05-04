@@ -4,6 +4,14 @@ import { useStore } from '../store';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
+import {
+  cancelSale,
+  createBackup,
+  getBackups,
+  restoreBackup,
+  openBackupFolder
+} from "../services/api";
+import { notify } from '../utils/notify';
 
 function getImageBase64(url) {
   return new Promise((resolve) => {
@@ -42,6 +50,9 @@ export function Reports() {
     endDate: new Date().toISOString().split('T')[0],
   });
 
+  const [backups, setBackups] = useState([]);
+  const [showBackups, setShowBackups] = useState(false);
+
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [editingExpense, setEditingExpense] = useState(null);
   const [expenseForm, setExpenseForm] = useState({ description: '', value: '' });
@@ -59,6 +70,7 @@ export function Reports() {
 
   const handleExpenseSubmit = (e) => {
     e.preventDefault();
+
     if (editingExpense) {
       updateExpense(editingExpense.id, {
         description: expenseForm.description,
@@ -70,6 +82,7 @@ export function Reports() {
         value: Number(expenseForm.value),
       });
     }
+
     setExpenseForm({ description: '', value: '' });
     setEditingExpense(null);
     setShowExpenseModal(false);
@@ -80,6 +93,61 @@ export function Reports() {
     setExpenseForm({ description: exp.description, value: exp.value });
     setShowExpenseModal(true);
   };
+
+  async function handleCreateBackup() {
+    const result = await createBackup();
+
+    notify[result.sucesso ? "success" : "error"](
+      result.mensagem || result.erro || "Backup finalizado."
+    );
+  }
+
+  async function handleOpenFolder() {
+    const result = await openBackupFolder();
+
+    if (result?.erro) {
+      notify.error(result.erro);
+    } else {
+      notify.success(result?.mensagem || "Pasta de backups aberta.");
+    }
+  }
+
+  async function handleLoadBackups() {
+    const data = await getBackups();
+
+    setBackups(Array.isArray(data) ? data : []);
+    setShowBackups(true);
+  }
+
+  async function handleRestore(name) {
+    const ok = await notify.confirm("Restaurar backup? Isso substituirá os dados atuais.");
+
+    if (!ok) return;
+
+    const result = await restoreBackup(name);
+
+    notify[result.sucesso ? "success" : "error"](
+      result.mensagem || result.erro || "Backup restaurado."
+    );
+  }
+
+  async function handleCancelSale(id) {
+    const motivo = await notify.prompt("Motivo da devolução/cancelamento:");
+
+    if (motivo === null) return;
+
+    const confirmar = await notify.confirm(
+      "Tem certeza que deseja devolver/cancelar esta venda? O estoque será atualizado."
+    );
+
+    if (!confirmar) return;
+
+    const result = await cancelSale(id, motivo);
+
+    notify[result.sucesso ? "success" : "error"](
+      result.mensagem || result.erro
+    );
+  }
 
   const allSales = [...salesToday, ...salesLast31Days];
 
@@ -132,8 +200,8 @@ export function Reports() {
       email: '',
     };
 
-    // ── Cabeçalho ───────────────────────────────────────────
     const logoBase64 = await getImageBase64('/logo.png');
+
     if (logoBase64) {
       doc.addImage(logoBase64, 'PNG', 12, 8, 26, 26);
     }
@@ -162,7 +230,6 @@ export function Reports() {
       doc.text(line, textX, 22 + i * 5);
     });
 
-    // Título à direita
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
     doc.setTextColor(20, 20, 20);
@@ -173,19 +240,22 @@ export function Reports() {
     doc.setTextColor(120, 120, 120);
     doc.text(
       `Período: ${formatDate(dateRange.startDate)} – ${formatDate(dateRange.endDate)}`,
-      pageWidth - 14, 23, { align: 'right' }
-    );
-    doc.text(
-      `Emitido em: ${new Date().toLocaleString('pt-BR')}`,
-      pageWidth - 14, 29, { align: 'right' }
+      pageWidth - 14,
+      23,
+      { align: 'right' }
     );
 
-    // Linha divisória preta
+    doc.text(
+      `Emitido em: ${new Date().toLocaleString('pt-BR')}`,
+      pageWidth - 14,
+      29,
+      { align: 'right' }
+    );
+
     doc.setDrawColor(30, 30, 30);
     doc.setLineWidth(0.6);
     doc.line(12, 40, pageWidth - 12, 40);
 
-    // ── Resumo financeiro ───────────────────────────────────
     let y = 50;
 
     doc.setFont('helvetica', 'bold');
@@ -227,10 +297,12 @@ export function Reports() {
       },
     });
 
-    // ── Tabela de Vendas ────────────────────────────────────
     y = doc.lastAutoTable?.finalY + 14;
 
-    if (y > pageHeight - 60) { doc.addPage(); y = 20; }
+    if (y > pageHeight - 60) {
+      doc.addPage();
+      y = 20;
+    }
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(9);
@@ -274,10 +346,12 @@ export function Reports() {
       },
     });
 
-    // ── Tabela de Despesas ──────────────────────────────────
     y = doc.lastAutoTable?.finalY + 14;
 
-    if (y > pageHeight - 60) { doc.addPage(); y = 20; }
+    if (y > pageHeight - 60) {
+      doc.addPage();
+      y = 20;
+    }
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(9);
@@ -319,8 +393,8 @@ export function Reports() {
       },
     });
 
-    // ── Rodapé em todas as páginas ──────────────────────────
     const totalPages = doc.internal.getNumberOfPages();
+
     for (let i = 1; i <= totalPages; i++) {
       doc.setPage(i);
       doc.setDrawColor(30, 30, 30);
@@ -402,6 +476,7 @@ export function Reports() {
         <h3 className={`text-sm font-semibold uppercase tracking-wider mb-4 ${isDarkMode ? 'text-slate-300' : 'text-gray-500'}`}>
           Filtrar por Período
         </h3>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className={`block text-xs mb-1 font-medium ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
@@ -414,6 +489,7 @@ export function Reports() {
               className={input}
             />
           </div>
+
           <div>
             <label className={`block text-xs mb-1 font-medium ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
               Data final
@@ -434,7 +510,9 @@ export function Reports() {
           <p className={`text-xs font-semibold uppercase tracking-wider mb-2 ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
             Receita
           </p>
-          <p className="text-2xl font-bold text-emerald-500">R$ {money(totalRevenue)}</p>
+          <p className="text-2xl font-bold text-emerald-500">
+            R$ {money(totalRevenue)}
+          </p>
           <p className={`text-xs mt-1 ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>
             {groupedSales.length} vendas no período
           </p>
@@ -444,7 +522,9 @@ export function Reports() {
           <p className={`text-xs font-semibold uppercase tracking-wider mb-2 ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
             Despesas
           </p>
-          <p className="text-2xl font-bold text-red-500">R$ {money(totalExpensesAmount)}</p>
+          <p className="text-2xl font-bold text-red-500">
+            R$ {money(totalExpensesAmount)}
+          </p>
           <p className={`text-xs mt-1 ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>
             {filteredExpenses.length} registros no período
           </p>
@@ -476,6 +556,7 @@ export function Reports() {
               {filteredExpenses.length} registros encontrados
             </p>
           </div>
+
           <button
             onClick={() => {
               setEditingExpense(null);
@@ -511,14 +592,19 @@ export function Reports() {
                     {new Date(exp.date).toLocaleDateString('pt-BR')}
                   </p>
                 </div>
+
                 <div className="flex items-center gap-3">
-                  <span className="text-red-500 font-bold text-sm">R$ {money(exp.value)}</span>
+                  <span className="text-red-500 font-bold text-sm">
+                    R$ {money(exp.value)}
+                  </span>
+
                   <button
                     onClick={() => handleEditExpense(exp)}
                     className="p-1.5 text-pink-500 hover:bg-pink-100 rounded-lg transition-all"
                   >
                     <Pencil className="w-4 h-4" />
                   </button>
+
                   <button
                     onClick={() => deleteExpense(exp.id)}
                     className="p-1.5 text-red-400 hover:bg-red-100 rounded-lg transition-all"
@@ -532,8 +618,8 @@ export function Reports() {
         )}
       </div>
 
-      {/* Botões de exportação */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Botões de exportação + Backup */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <button
           onClick={exportToPDF}
           className={`flex items-center gap-4 p-6 rounded-2xl border-2 transition-all ${
@@ -545,6 +631,7 @@ export function Reports() {
           <div className="w-12 h-12 rounded-xl bg-pink-600 flex items-center justify-center shrink-0">
             <FileText className="w-6 h-6 text-white" />
           </div>
+
           <div className="text-left">
             <p className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
               Exportar para PDF
@@ -553,6 +640,7 @@ export function Reports() {
               Relatório formatado com logo e tabelas
             </p>
           </div>
+
           <Download className="w-5 h-5 text-pink-500 ml-auto" />
         </button>
 
@@ -567,6 +655,7 @@ export function Reports() {
           <div className="w-12 h-12 rounded-xl bg-green-600 flex items-center justify-center shrink-0">
             <FileText className="w-6 h-6 text-white" />
           </div>
+
           <div className="text-left">
             <p className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
               Exportar para Excel
@@ -575,9 +664,112 @@ export function Reports() {
               Planilha com vendas, despesas e resumo
             </p>
           </div>
+
           <Download className="w-5 h-5 text-green-500 ml-auto" />
         </button>
+
+        <button
+          onClick={handleCreateBackup}
+          className={`flex items-center gap-4 p-6 rounded-2xl border-2 transition-all ${
+            isDarkMode
+              ? 'border-slate-700 bg-slate-800 hover:bg-slate-700'
+              : 'border-slate-200 bg-white hover:bg-slate-50'
+          }`}
+        >
+          <div className="w-12 h-12 rounded-xl bg-slate-700 flex items-center justify-center shrink-0">
+            <Download className="w-6 h-6 text-white" />
+          </div>
+
+          <div className="text-left">
+            <p className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+              Fazer Backup
+            </p>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Salva uma cópia segura do banco de dados
+            </p>
+          </div>
+
+          <Download className="w-5 h-5 text-slate-500 ml-auto" />
+        </button>
       </div>
+
+      {/* Botões de gerenciamento dos backups */}
+      <div className="flex flex-wrap gap-2">
+        <button
+          onClick={handleLoadBackups}
+          className={`px-4 py-2 rounded-xl border text-sm font-medium transition-all ${
+            isDarkMode
+              ? 'border-slate-700 text-slate-200 hover:bg-slate-700'
+              : 'border-gray-200 text-gray-700 hover:bg-gray-100'
+          }`}
+        >
+          Ver Backups
+        </button>
+
+        <button
+          onClick={handleOpenFolder}
+          className={`px-4 py-2 rounded-xl border text-sm font-medium transition-all ${
+            isDarkMode
+              ? 'border-slate-700 text-slate-200 hover:bg-slate-700'
+              : 'border-gray-200 text-gray-700 hover:bg-gray-100'
+          }`}
+        >
+          Abrir Pasta
+        </button>
+      </div>
+
+      {/* Lista de backups */}
+      {showBackups && (
+        <div className={card}>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+              Backups disponíveis
+            </h3>
+
+            <button
+              onClick={() => setShowBackups(false)}
+              className="text-sm text-gray-400 hover:text-gray-600"
+            >
+              Fechar
+            </button>
+          </div>
+
+          {backups.length === 0 ? (
+            <p className="text-sm text-gray-400">
+              Nenhum backup encontrado.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {backups.map((backup) => (
+                <div
+                  key={backup.name}
+                  className={`flex justify-between items-center p-3 rounded-xl border ${
+                    isDarkMode
+                      ? 'border-slate-700 bg-slate-700'
+                      : 'border-gray-200 bg-gray-50'
+                  }`}
+                >
+                  <div>
+                    <p className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                      {backup.name}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      {(Number(backup.size || 0) / 1024).toFixed(1)} KB
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => handleRestore(backup.name)}
+                    className="px-3 py-2 rounded-lg bg-pink-600 hover:bg-pink-700 text-white text-sm"
+                  >
+                    Restaurar
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Modal de despesa */}
       {showExpenseModal && (
@@ -604,6 +796,7 @@ export function Reports() {
                   className={input}
                 />
               </div>
+
               <div>
                 <label className={`block text-xs font-medium mb-1 ${isDarkMode ? 'text-slate-400' : 'text-gray-500'}`}>
                   Valor (R$)
@@ -628,6 +821,7 @@ export function Reports() {
                 >
                   Cancelar
                 </button>
+
                 <button
                   onClick={handleExpenseSubmit}
                   className="flex-1 py-2.5 bg-pink-600 hover:bg-pink-700 text-white rounded-xl font-medium text-sm transition-all"
@@ -639,6 +833,7 @@ export function Reports() {
           </div>
         </div>
       )}
+
     </div>
   );
 }

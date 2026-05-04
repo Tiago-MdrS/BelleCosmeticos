@@ -25,7 +25,7 @@ export function Settings() {
     e.preventDefault();
 
     localStorage.setItem('storeData', JSON.stringify(storeData));
-    alert('Configurações salvas com sucesso!');
+    notify.success('Configurações salvas com sucesso!');
   };
 
   return (

@@ -4,6 +4,8 @@ import cors from "cors";
 import produtosRoutes from "./routes/produtos.routes.js";
 import vendasRoutes from "./routes/vendas.routes.js";
 import estoqueRoutes from "./routes/estoque.routes.js";
+import backupRoutes from "./routes/backup.routes.js";
+
 
 const app = express();
 
@@ -17,7 +19,7 @@ app.get("/", (req, res) => {
 app.use("/produtos", produtosRoutes);
 app.use("/vendas", vendasRoutes);
 app.use("/estoque", estoqueRoutes);
-
+app.use("/backup", backupRoutes);
 const PORT = process.env.PORT || 3333;
 
 const server = app.listen(PORT, () => {

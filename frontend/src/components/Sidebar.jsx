@@ -1,16 +1,24 @@
 import React from 'react';
-import { BarChart3, Package, DollarSign, Target } from 'lucide-react';
-import logo from '../../assets/belle.jpg'; // 👈 AQUI
+import logo from '../../assets/belle.jpg'; 
+
+import {
+  DollarSign,
+  Package,
+  BarChart3,
+  FileText,
+  Settings,
+  History
+} from "lucide-react";
 
 export function Sidebar({ activePage, setActivePage }) {
   const menuItems = [
     { id: 'sales', label: 'Vendas', icon: DollarSign },
     { id: 'inventory', label: 'Estoque', icon: Package },
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
-    { id: 'reports', label: 'Relatórios', icon: BarChart3 },
-    { id: 'settings', label: 'Configurações', icon: Target },
+    { id: 'reports', label: 'Relatórios', icon: FileText },
+    { id: 'settings', label: 'Configurações', icon: Settings },
+    { id: 'history', label: 'Histórico', icon: History },
   ];
-
   return (
     <div className="w-64 h-screen flex flex-col border-r border-pink-100 bg-white/80 backdrop-blur-xl shadow-lg">
 

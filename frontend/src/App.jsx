@@ -5,6 +5,7 @@ import { Sales } from './pages/Sales';
 import { Inventory } from './pages/Inventory';
 import { Reports } from './pages/Reports';
 import { Settings } from './pages/Settings';
+import { History } from './pages/History';
 import './index.css';
 
 function App() {
@@ -22,6 +23,8 @@ function App() {
         return <Dashboard />;
       case 'settings':
         return <Settings />;
+      case 'history':
+        return <History />;
       default:
         return <Sales setActivePage={setActivePage} />;
     }

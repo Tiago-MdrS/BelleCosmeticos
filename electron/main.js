@@ -1,55 +1,44 @@
-const { app, BrowserWindow } = require('electron');
-const path = require('path');
-const { spawn } = require('child_process');
+const { app, BrowserWindow } = require("electron");
+const path = require("path");
+const { spawn } = require("child_process");
 
 let backendProcess;
 
-const isDev = !app.isPackaged;
-
 function startBackend() {
-  const backendDir = path.join(app.getAppPath(), 'backend');
-  const serverPath = path.join(backendDir, 'src', 'server.js');
+  const backendPath = app.isPackaged
+    ? path.join(process.resourcesPath, "backend", "src", "server.js")
+    : path.join(__dirname, "..", "backend", "src", "server.js");
 
-  backendProcess = spawn(process.execPath, [serverPath], {
-    cwd: backendDir,
-    env: {
-      ...process.env,
-      ELECTRON_RUN_AS_NODE: '1',
-      PORT: '3333'
-    },
-    stdio: 'pipe',
-    windowsHide: true
+  backendProcess = spawn("node", [backendPath], {
+    cwd: path.dirname(backendPath),
+    shell: true,
+    stdio: "ignore"
   });
 
-  backendProcess.stdout.on('data', (data) => {
-    console.log(`[BACKEND] ${data}`);
-  });
-
-  backendProcess.stderr.on('data', (data) => {
-    console.error(`[BACKEND ERROR] ${data}`);
+  backendProcess.on("error", (err) => {
+    console.error("Erro ao iniciar backend:", err);
   });
 }
 
 function createWindow() {
-  const iconPath = path.join(app.getAppPath(), 'assets', 'loja.ico');
-
   const win = new BrowserWindow({
     width: 1200,
     height: 800,
-    minWidth: 1000,
-    minHeight: 700,
-    title: 'Belle Cosméticos',
-    icon: iconPath,
+    show: false,
     webPreferences: {
-      contextIsolation: true,
-      nodeIntegration: false
+      nodeIntegration: false,
+      contextIsolation: true
     }
   });
 
-  if (isDev) {
-    win.loadURL('http://localhost:5173');
+  win.once("ready-to-show", () => {
+    win.show();
+  });
+
+  if (app.isPackaged) {
+    win.loadFile(path.join(__dirname, "..", "frontend", "dist", "index.html"));
   } else {
-    win.loadFile(path.join(app.getAppPath(), 'dist', 'index.html'));
+    win.loadURL("http://localhost:5173");
   }
 }
 
@@ -61,18 +50,12 @@ app.whenReady().then(() => {
   }, 1500);
 });
 
-app.on('window-all-closed', () => {
+app.on("window-all-closed", () => {
   if (backendProcess) {
     backendProcess.kill();
   }
 
-  if (process.platform !== 'darwin') {
+  if (process.platform !== "darwin") {
     app.quit();
-  }
-});
-
-app.on('before-quit', () => {
-  if (backendProcess) {
-    backendProcess.kill();
   }
 });

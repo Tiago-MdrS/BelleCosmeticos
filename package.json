@@ -5,15 +5,15 @@
   "author": "Tiago Madeira",
   "main": "electron/main.js",
   "homepage": "./",
-"scripts": {
-  "dev": "cd frontend && npm run dev",
-  "build": "cd frontend && npm run build",
-  "preview": "cd frontend && npm run preview",
-  "electron": "electron .",
-  "electron-dev": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && electron .\"",
-  "dist": "npm run build && electron-builder",
-  "electron-build": "npm run build && electron-builder"
-},
+  "scripts": {
+    "dev": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "preview": "cd frontend && npm run preview",
+    "electron": "electron .",
+    "electron-dev": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && electron .\"",
+    "dist": "npm run build && electron-builder",
+    "electron-build": "npm run build && electron-builder"
+  },
   "dependencies": {
     "date-fns": "^2.30.0",
     "express": "^4.18.2",
@@ -41,11 +41,17 @@
     "appId": "com.bellecosmeticos.app",
     "productName": "BelleCosméticos",
     "files": [
-      "dist/**/*",
+      "frontend/dist/**/*",
       "electron/**/*",
       "backend/**/*",
       "assets/**/*",
       "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "backend",
+        "to": "backend"
+      }
     ],
     "extraMetadata": {
       "main": "electron/main.js"

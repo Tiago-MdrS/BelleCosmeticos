@@ -117,4 +117,66 @@ router.post("/", (req, res) => {
   }
 });
 
+/* 🔥 CANCELAR / DEVOLVER VENDA */
+router.patch("/:id/cancelar", (req, res) => {
+  try {
+    const { id } = req.params;
+    const { motivo } = req.body;
+
+    const venda = db.prepare(`
+      SELECT * FROM vendas WHERE id = ?
+    `).get(id);
+
+    if (!venda) {
+      return res.status(404).json({ erro: "Venda não encontrada" });
+    }
+
+    if (venda.status === "cancelada" || venda.status === "devolvida") {
+      return res.status(400).json({ erro: "Venda já foi cancelada/devolvida" });
+    }
+
+    const itens = db.prepare(`
+      SELECT * FROM itens_venda WHERE venda_id = ?
+    `).all(id);
+
+    const cancelarVenda = db.transaction(() => {
+      for (const item of itens) {
+        db.prepare(`
+          UPDATE produtos
+          SET quantidade = quantidade + ?
+          WHERE id = ?
+        `).run(item.quantidade, item.produto_id);
+
+        db.prepare(`
+          INSERT INTO movimentacoes_estoque
+          (produto_id, tipo, quantidade, descricao)
+          VALUES (?, 'entrada', ?, ?)
+        `).run(
+          item.produto_id,
+          item.quantidade,
+          `Devolução da venda #${id}`
+        );
+      }
+
+      db.prepare(`
+        UPDATE vendas
+        SET status = 'devolvida',
+            motivo_cancelamento = ?,
+            data_cancelamento = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `).run(motivo || "Devolução/cancelamento", id);
+    });
+
+    cancelarVenda();
+
+    res.json({
+      mensagem: "Venda devolvida com sucesso e estoque atualizado"
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ erro: "Erro ao cancelar venda" });
+  }
+});
+
 export default router;
