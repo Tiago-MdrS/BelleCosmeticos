@@ -17,7 +17,6 @@ export function Sidebar({ activePage, setActivePage }) {
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
     { id: 'reports', label: 'Relatórios', icon: FileText },
     { id: 'settings', label: 'Configurações', icon: Settings },
-    { id: 'history', label: 'Histórico', icon: History },
   ];
   return (
     <div className="w-64 h-screen flex flex-col border-r border-pink-100 bg-white/80 backdrop-blur-xl shadow-lg">
