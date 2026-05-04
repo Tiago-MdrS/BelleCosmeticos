@@ -4,24 +4,29 @@ const { spawn } = require('child_process');
 
 let backendProcess;
 
-function startBackend() {
-  const backendPath = path.join(__dirname, '..', 'backend');
+const isDev = !app.isPackaged;
 
-  backendProcess = spawn('node', ['src/server.js'], {
-    cwd: backendPath,
-    shell: true,
+function startBackend() {
+  const backendDir = path.join(app.getAppPath(), 'backend');
+  const serverPath = path.join(backendDir, 'src', 'server.js');
+
+  backendProcess = spawn(process.execPath, [serverPath], {
+    cwd: backendDir,
     env: {
       ...process.env,
+      ELECTRON_RUN_AS_NODE: '1',
       PORT: '3333'
-    }
+    },
+    stdio: 'pipe',
+    windowsHide: true
   });
 
   backendProcess.stdout.on('data', (data) => {
-    console.log(`[BACKEND]: ${data}`);
+    console.log(`[BACKEND] ${data}`);
   });
 
   backendProcess.stderr.on('data', (data) => {
-    console.error(`[BACKEND ERROR]: ${data}`);
+    console.error(`[BACKEND ERROR] ${data}`);
   });
 }
 
@@ -38,7 +43,11 @@ function createWindow() {
     }
   });
 
-  win.loadURL('http://localhost:5173');
+  if (isDev) {
+    win.loadURL('http://localhost:5173');
+  } else {
+    win.loadFile(path.join(app.getAppPath(), 'dist', 'index.html'));
+  }
 }
 
 app.whenReady().then(() => {
@@ -56,5 +65,11 @@ app.on('window-all-closed', () => {
 
   if (process.platform !== 'darwin') {
     app.quit();
+  }
+});
+
+app.on('before-quit', () => {
+  if (backendProcess) {
+    backendProcess.kill();
   }
 });
